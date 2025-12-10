@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WavePredictor 🌊</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', sans-serif;
+            background: #f0f8ff;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            max-width: 440px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #0077be;
+        }
+        p {
+            font-size: 0.95em;
+            color: #555;
+        }
+        label {
+            font-weight: bold;
+            margin-top: 10px;
+            display: block;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            background: #0077be;
+            color: white;
+            border: none;
+            padding: 12px;
+            margin-top: 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #005f99;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+            background: #e6f7ff;
+        }
+        .section-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .activity {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        .condition {
+            color: #444;
+            font-size: 0.9em;
+        }
+        .error {
+            color: #b00020;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>WavePredictor 🌊</h1>
+    <p>
+        Enter forecast values (e.g. from Surfline or Windguru).<br>
+        The ML model predicts the current wave-size class and suggests a suitable activity.
+    </p>
+
+    <label>Significant wave height sigheight (m)</label>
+    <input type="number" id="sigheight" step="0.1" value="1.0" min="0">
+
+    <label>Swell height swellheight (m)</label>
+    <input type="number" id="swellheight" step="0.1" value="0.8" min="0">
+
+    <label>Wave period (s)</label>
+    <input type="number" id="period" step="0.1" value="9" min="0">
+
+    <label>Wind speed (knots)</label>
+    <input type="number" id="windspeed" step="1" value="10" min="0">
+    <small>Use the wind speed in knots exactly as shown in the surf forecast.</small>
+
+    <label>Wind direction (degrees, 0–360)</label>
+    <input type="number" id="winddirdegree" step="1" value="270" min="0" max="360">
+
+    <button onclick="predict()">Predict wave & activity</button>
+
+    <div id="result">
+        <div class="section-title">ML wave classification</div>
+        <div class="condition" id="res-wave-classline"></div>
+
+        <hr>
+
+        <div class="section-title">Suggested activity</div>
+        <div class="activity" id="res-activity"></div>
+        <div id="res-message"></div>
+    </div>
+
+    <div class="error" id="res-error" style="display:none;"></div>
+</div>
+
+<script>
+    async function predict() {
+        const payload = {
+            sigheight: document.getElementById('sigheight').value,
+            swellheight: document.getElementById('swellheight').value,
+            period: document.getElementById('period').value,
+            windspeed: document.getElementById('windspeed').value,
+            winddirdegree: document.getElementById('winddirdegree').value
+        };
+
+        const resBox = document.getElementById('result');
+        const errBox = document.getElementById('res-error');
+        errBox.style.display = "none";
+        resBox.style.display = "none";
+
+        try {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                errBox.style.display = "block";
+                errBox.innerText = data.error || "Unexpected error.";
+                return;
+            }
+
+            resBox.style.display = "block";
+
+            // Show ML wave class (0/1/2) + label
+            document.getElementById('res-wave-classline').innerText =
+                `Class ${data.bulk_class}: ${data.sea_condition}`;
+
+            // Show suggested activity
+            document.getElementById('res-activity').innerText = data.activity;
+            document.getElementById('res-message').innerText = data.message;
+
+        } catch (e) {
+            errBox.style.display = "block";
+            errBox.innerText = "Request failed: " + e;
+        }
+    }
+</script>
+
+</body>
+</html>
