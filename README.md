@@ -25,5 +25,5 @@ WavePredictor is based on the public Kaggle dataset
 
 ## Deployment
 
-The app is intended to be deployed on Render as a simple Flask service.  
-A public demo URL will be added here once deployment is complete.
+The app is deployed on Render as a simple Flask App
+[**WavePredictor**](https://wave-predictor.onrender.com/).
